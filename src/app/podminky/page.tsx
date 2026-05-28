@@ -10,7 +10,7 @@ export default function PodminkyPage() {
 
       <h2 className="text-2xl font-bold text-ink-950 mt-8">1. Obecná ustanovení</h2>
       <p>
-        Provozovatelem platformy Předseda v klidu (dále jen „platforma") je společnost xyz s.r.o.
+        Provozovatelem platformy Předseda v klidu (dále jen „platforma“) je společnost xyz s.r.o.
         Platforma slouží jako katalog poskytovatelů služeb v oblasti správy SVJ a bytových domů
         a jako prostředník pro odesílání poptávek mezi SVJ a poskytovateli.
       </p>

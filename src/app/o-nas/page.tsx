@@ -30,7 +30,7 @@ export default function ONasPage() {
       </p>
       <h2>Nezávislost</h2>
       <p>
-        Nejsme správcovská firma. Nedoporučujeme „svého" správce — všichni mají rovné
+        Nejsme správcovská firma. Nedoporučujeme „svého“ správce — všichni mají rovné
         podmínky podle nastavených filtrů a hodnocení. Premium plán dává lepší viditelnost,
         ne lepší hodnocení.
       </p>
