@@ -6,7 +6,7 @@ import { SpravceCard } from "@/components/SpravceCard";
 import { PredsedaCard } from "@/components/PredsedaCard";
 import { RatingStars } from "@/components/RatingStars";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 async function getData() {
   const [topSpravci, topPredsedove, novinky, statsSpravci, statsPredsedove, statsPoptavky] =
