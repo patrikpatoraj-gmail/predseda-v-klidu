@@ -1,0 +1,378 @@
+// =====================================================
+// Předseda v klidu — databázové schéma (MVP, Praha)
+// =====================================================
+// Pre vývoj používa SQLite (zero-setup).
+// Pre produkciu prepnúť provider na "postgresql".
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -----------------------------------------------------
+// UŽÍVATELIA & AUTENTIZÁCIA
+// -----------------------------------------------------
+
+enum Role {
+  VISITOR     // bežný návštevník (nezaregistrovaný — nepoužíva sa v DB)
+  SPRAVCE     // zástupca správcovskej firmy
+  PREDSEDA    // profesionálny predseda
+  ADMIN       // moderátor / administrátor platformy
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String
+  role          String    @default("SPRAVCE") // SPRAVCE | PREDSEDA | ADMIN
+  phone         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // väzby
+  spravce       Spravce?
+  predseda      Predseda?
+  recenze       Recenze[]    @relation("RecenzeAutor")
+  reakcie       RecenzeReakce[]
+  poptavky      Poptavka[]
+  clanky        Clanek[]
+  nahlaseni     NahlaseniRecenze[]
+
+  // NextAuth
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------
+// SPRÁVCOVSKÁ FIRMA
+// -----------------------------------------------------
+
+model Spravce {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  nazev             String
+  logo              String?
+  obrazekHeader     String?
+  ico               String?
+  popis             String
+
+  // pôsobnosť
+  kraj              String   @default("Praha")
+  mesto             String   @default("Praha")
+  regionyPusobnosti String   // JSON pole — napr. ["Praha 1","Praha 2","Praha 8"]
+
+  // číselné údaje
+  pocetDomu         Int      @default(0)
+  pocetJednotek     Int      @default(0)
+  rokZalozeni       Int?
+
+  // ZAMERANIE / SLUŽBY (boolean flagy — pre rýchle filtre)
+  ucetniSprava      Boolean  @default(false)
+  technickaSprava   Boolean  @default(false)
+  havarijniSluzba   Boolean  @default(false)
+  onlinePortal      Boolean  @default(false)
+  onlineHlasovani   Boolean  @default(false)
+  zkRekonstrukce    Boolean  @default(false)
+  zkDotace          Boolean  @default(false)
+  zkUvery           Boolean  @default(false)
+  pravniPoradenstvi Boolean  @default(false)
+
+  // cena (orientačná, Kč/jednotka/mesiac)
+  cenaOd            Int?
+  cenaDo            Int?
+
+  // kontakt
+  kontaktniOsoba    String
+  email             String
+  telefon           String
+  web               String?
+  adresa            String?
+
+  // galéria + reference
+  galerie           String?  // JSON pole URL
+  reference         String?  // JSON pole textových referencií
+
+  // status
+  overeny           Boolean  @default(false) // ověřený profil
+  premium           Boolean  @default(false) // platený profil
+  zviraznen         Boolean  @default(false) // zvýraznený v listingu
+  schvaleny         Boolean  @default(true)  // schválené adminom
+  aktivni           Boolean  @default(true)
+
+  // metriky (cache pre rýchlosť)
+  prumerneHodnoceni Float    @default(0)
+  pocetRecenzi      Int      @default(0)
+  pocetZobrazeni    Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // väzby
+  userId            String?  @unique
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  recenze           Recenze[]
+  poptavkySpravce   PoptavkaSpravce[]
+  clanky            Clanek[]
+
+  @@index([kraj, mesto])
+  @@index([premium, prumerneHodnoceni])
+}
+
+// -----------------------------------------------------
+// PROFESIONÁLNY PREDSEDA
+// -----------------------------------------------------
+
+model Predseda {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  jmeno             String
+  fotografie        String?
+  popis             String
+
+  // pôsobnosť
+  kraj              String   @default("Praha")
+  mesto             String   @default("Praha")
+  regionyPusobnosti String   // JSON pole
+
+  // číselné údaje
+  pocetSvj          Int      @default(0)
+  velikostDomuMin   Int?     // od koľko jednotiek
+  velikostDomuMax   Int?
+  rokyZkusenosti    Int      @default(0)
+
+  // SPECIALIZÁCIA
+  specializace      String   // JSON pole — napr. ["Rekonstrukce","Dotace","Spory"]
+  vzdelani          String?
+  certifikace       String?  // JSON pole
+
+  // cena (Kč/mesiac za vedenie SVJ)
+  cenaOd            Int?
+  cenaDo            Int?
+
+  // kontakt
+  email             String
+  telefon           String
+  linkedIn          String?
+
+  reference         String?  // JSON pole
+
+  // status
+  overeny           Boolean  @default(false)
+  premium           Boolean  @default(false)
+  schvaleny         Boolean  @default(true)
+  aktivni           Boolean  @default(true)
+
+  // metriky
+  prumerneHodnoceni Float    @default(0)
+  pocetRecenzi      Int      @default(0)
+  pocetZobrazeni    Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  userId            String?  @unique
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  recenze           Recenze[]
+  clanky            Clanek[]
+
+  @@index([kraj, mesto])
+  @@index([premium, prumerneHodnoceni])
+}
+
+// -----------------------------------------------------
+// RECENZIE & HODNOTENIE
+// -----------------------------------------------------
+
+model Recenze {
+  id            String   @id @default(cuid())
+  hodnoceni     Int      // 1-5 celkové
+  komunikace    Int      // 1-5
+  kvalitaSpravy Int      // 1-5
+  rychlost      Int      // 1-5
+  nadpis        String
+  text          String
+
+  // autor — buď prihlásený užívateľ alebo (pre MVP) anonymný s overením e-mailu
+  autorJmeno    String
+  autorEmail    String
+  autorSvj      String?  // názov SVJ pre dôveryhodnosť
+
+  // stav moderace
+  schvalena     Boolean  @default(false)
+  zamietnuta    Boolean  @default(false)
+  duvodZamietnuti String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // väzba na recenzovaný subjekt (jedno z dvoch)
+  spravceId     String?
+  spravce       Spravce? @relation(fields: [spravceId], references: [id], onDelete: Cascade)
+  predsedaId    String?
+  predseda      Predseda? @relation(fields: [predsedaId], references: [id], onDelete: Cascade)
+
+  autorUserId   String?
+  autorUser     User?    @relation("RecenzeAutor", fields: [autorUserId], references: [id], onDelete: SetNull)
+
+  reakce        RecenzeReakce[]
+  nahlaseni     NahlaseniRecenze[]
+
+  @@index([spravceId, schvalena])
+  @@index([predsedaId, schvalena])
+}
+
+// reakcia správcu na recenziu
+model RecenzeReakce {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  recenzeId String
+  recenze   Recenze  @relation(fields: [recenzeId], references: [id], onDelete: Cascade)
+  autorId   String
+  autor     User     @relation(fields: [autorId], references: [id], onDelete: Cascade)
+}
+
+// nahlásenie problémovej recenzie
+model NahlaseniRecenze {
+  id          String   @id @default(cuid())
+  duvod       String
+  popis       String?
+  vyrieseno   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  recenzeId   String
+  recenze     Recenze  @relation(fields: [recenzeId], references: [id], onDelete: Cascade)
+  nahlasilId  String
+  nahlasil    User     @relation(fields: [nahlasilId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------
+// POPTÁVKY
+// -----------------------------------------------------
+
+enum PoptavkaStav {
+  NOVA
+  ODESLANA
+  ZPRACOVANA
+  UZAVRENA
+}
+
+model Poptavka {
+  id              String   @id @default(cuid())
+
+  // SVJ / žiadateľ
+  nazevSvj        String
+  lokalita        String
+  pocetJednotek   Int
+  popisPoptavky   String   // čo poptáva
+  preferovanyDatum DateTime?
+
+  // kontakt
+  kontaktniOsoba  String
+  telefon         String
+  email           String
+  dokumenty       String?  // JSON pole URL nahraných súborov
+
+  // stav
+  stav            String   @default("NOVA") // NOVA | ODESLANA | ZPRACOVANA | UZAVRENA
+  schvalena       Boolean  @default(false)  // antispam — admin musí potvrdiť pred rozoslaním
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  spravci         PoptavkaSpravce[]
+
+  @@index([stav, createdAt])
+}
+
+// join table — poptávka môže ísť na N správcov
+model PoptavkaSpravce {
+  id            String   @id @default(cuid())
+  poptavkaId    String
+  spravceId     String
+  odeslano      Boolean  @default(false)
+  zobrazeno     Boolean  @default(false)
+  odpovezeno    Boolean  @default(false)
+  poznamka      String?
+  createdAt     DateTime @default(now())
+
+  poptavka      Poptavka @relation(fields: [poptavkaId], references: [id], onDelete: Cascade)
+  spravce       Spravce  @relation(fields: [spravceId], references: [id], onDelete: Cascade)
+
+  @@unique([poptavkaId, spravceId])
+}
+
+// -----------------------------------------------------
+// ČLÁNKY / EDUKÁCIA / BLOG
+// -----------------------------------------------------
+
+model Clanek {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nadpis      String
+  perex       String
+  obsah       String   // markdown
+  obrazek     String?
+
+  kategorie   String   // Rekonstrukce | Pojištění | Úvěry | Dotace | Právo | Vedení | Vzory
+  tagy        String   // JSON pole
+
+  premium     Boolean  @default(false)
+  publikovany Boolean  @default(true)
+  publikovanoAt DateTime?
+
+  seoTitle    String?
+  seoDescription String?
+
+  // metriky
+  pocetZobrazeni Int   @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  autorId     String?
+  autor       User?    @relation(fields: [autorId], references: [id], onDelete: SetNull)
+
+  spravceId   String?
+  spravce     Spravce? @relation(fields: [spravceId], references: [id], onDelete: SetNull)
+
+  predsedaId  String?
+  predseda    Predseda? @relation(fields: [predsedaId], references: [id], onDelete: SetNull)
+
+  @@index([kategorie, publikovany])
+}
