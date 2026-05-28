@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { parseJson, formatCenaRozsah } from "@/lib/utils";
-import { Badge, PremiumBadge, VerifiedBadge } from "@/components/Badge";
+import { Badge, PremiumBadge, RealnyZdrojBadge, VerifiedBadge } from "@/components/Badge";
 import { RatingStars } from "@/components/RatingStars";
 import { SLUZBY_LABELS } from "@/lib/constants";
 
@@ -73,6 +73,7 @@ export default async function SpravceDetail({ params }: { params: Params }) {
 
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-3">
+                {spravce.realnyZdroj && <RealnyZdrojBadge />}
                 {spravce.overeny && <VerifiedBadge />}
                 {spravce.premium && <PremiumBadge />}
                 {spravce.rokZalozeni && <Badge variant="outline">Od roku {spravce.rokZalozeni}</Badge>}

@@ -6,10 +6,12 @@ export function Badge({
   children,
   variant = "default",
   className,
+  title,
 }: {
   children: React.ReactNode;
   variant?: Variant;
   className?: string;
+  title?: string;
 }) {
   const styles: Record<Variant, string> = {
     default: "bg-ink-100 text-ink-700",
@@ -21,7 +23,7 @@ export function Badge({
   };
 
   return (
-    <span className={cn("badge", styles[variant], className)}>{children}</span>
+    <span className={cn("badge", styles[variant], className)} title={title}>{children}</span>
   );
 }
 
@@ -43,6 +45,17 @@ export function PremiumBadge() {
         <path d="M10 2 4 7l2 9 4-1 4 1 2-9-6-5Z" />
       </svg>
       Premium
+    </Badge>
+  );
+}
+
+export function RealnyZdrojBadge() {
+  return (
+    <Badge variant="success" className="gap-1" title="Profil vytvořen z veřejných registrů (ARES) a firemního webu, firma ho zatím nepotvrdila.">
+      <svg viewBox="0 0 20 20" className="w-3 h-3" fill="currentColor" aria-hidden>
+        <path d="M10 1a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm-1 13-4-4 1.4-1.4L9 11.2l4.6-4.6L15 8l-6 6Z" />
+      </svg>
+      Reálná firma
     </Badge>
   );
 }

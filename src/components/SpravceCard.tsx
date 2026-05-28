@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Badge, PremiumBadge, VerifiedBadge } from "./Badge";
+import { Badge, PremiumBadge, RealnyZdrojBadge, VerifiedBadge } from "./Badge";
 import { RatingStars } from "./RatingStars";
 import { cn, parseJson, formatCenaRozsah } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ type SpravceCardProps = {
     cenaDo: number | null;
     overeny: boolean;
     premium: boolean;
+    realnyZdroj?: boolean;
     prumerneHodnoceni: number;
     pocetRecenzi: number;
     havarijniSluzba: boolean;
@@ -105,6 +106,7 @@ export function SpravceCard({ spravce, selectable, selected, onToggleSelect }: S
       </div>
 
       <div className="flex flex-wrap gap-1.5">
+        {spravce.realnyZdroj && <RealnyZdrojBadge />}
         {spravce.overeny && <VerifiedBadge />}
         {spravce.premium && <PremiumBadge />}
         {spravce.havarijniSluzba && <Badge variant="success">Havárie 24/7</Badge>}

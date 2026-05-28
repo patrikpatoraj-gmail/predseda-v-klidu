@@ -126,11 +126,12 @@ model Spravce {
   reference         String?  // JSON pole textových referencií
 
   // status
-  overeny           Boolean  @default(false) // ověřený profil
+  overeny           Boolean  @default(false) // ověřený profil (firma sama potvrdila údaje)
   premium           Boolean  @default(false) // platený profil
   zviraznen         Boolean  @default(false) // zvýraznený v listingu
   schvaleny         Boolean  @default(true)  // schválené adminom
   aktivni           Boolean  @default(true)
+  realnyZdroj       Boolean  @default(false) // profil vytvorený z verejných registrov (ARES + firemný web), nie demo dáta
 
   // metriky (cache pre rýchlosť)
   prumerneHodnoceni Float    @default(0)
